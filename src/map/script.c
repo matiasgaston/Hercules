@@ -2752,7 +2752,7 @@ struct DBMap *script_array_src(struct script_state *st, struct map_session_data 
 			src = &sd->array_db;
 			break;
 		case '$':/* map reg */
-			src = &mapreg->array_db;
+			src = &mapreg->regs.arrays;
 			break;
 		case '.':/* npc/script */
 			if( ref )

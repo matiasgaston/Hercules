@@ -332,6 +332,14 @@ struct Script_Config {
 	const char* ontouch2_name;
 };
 
+/**
+ * Generic reg database abstraction to be used with various types of regs.
+ */
+struct reg_db {
+	struct DBMap *vars;
+	struct DBMap *arrays;
+};
+
 struct script_retinfo {
 	struct DBMap* var_function;// scope variables
 	struct script_code* script;// script code
