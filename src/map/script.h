@@ -363,8 +363,7 @@ struct script_data {
 struct script_code {
 	int script_size;
 	unsigned char *script_buf;
-	struct DBMap *script_vars;
-	struct DBMap *script_arrays_db;
+	struct reg_db local; ///< Local (npc) vars
 };
 
 struct script_stack {
