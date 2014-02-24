@@ -533,7 +533,7 @@ OnInit:
 	//callsub(OnCheck, "Callsub (nested scopes)", callsub(OnTestNestedScope), 1); // FIXME: Segmentation fault
 	deletearray .@x;
 	setarray .@x, 1, 2, 3, 4;
-	//callsub(OnCheck, "Callsub (array references)", callsub(OnTestArrayRefs, .@x), 4); // FIXME: Segmentation fault
+	callsub(OnCheck, "Callsub (array references)", callsub(OnTestArrayRefs, .@x), 4);
 	deletearray .@x;
 	.@y = callsub(OnTestReturnArrayRef, .@x);
 	callsub(OnCheck, "Callsub return array references (size check)", getarraysize(.@x), .@y);
@@ -568,7 +568,7 @@ OnTestNestedScope:
 	return .@y;
 
 OnTestArrayRefs:
-	return getelementofarray(getarg(0), getarraysize(getarg(0)));
+	return getelementofarray(getarg(0), getarraysize(getarg(0)) - 1);
 
 OnTestReturnArrayRef:
 	setarray getarg(0), 5, 6, 7, 8;
