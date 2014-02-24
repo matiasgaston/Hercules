@@ -2523,7 +2523,7 @@ struct script_data *get_val(struct script_state* st, struct script_data* data) {
 				break;
 			case '\'':
 					if ( st->instance_id >= 0 ) {
-						data->u.str = (char*)i64db_get(instance->list[st->instance_id].vars,reference_getuid(data));
+						data->u.str = (char*)i64db_get(instance->list[st->instance_id].regs.vars, reference_getuid(data));
 					} else {
 						ShowWarning("script_get_val: cannot access instance variable '%s', defaulting to \"\"\n", name);
 						data->u.str = NULL;
@@ -2578,7 +2578,7 @@ struct script_data *get_val(struct script_state* st, struct script_data* data) {
 					break;
 				case '\'':
 						if( st->instance_id >= 0 )
-							data->u.num = (int)i64db_iget(instance->list[st->instance_id].vars,reference_getuid(data));
+							data->u.num = (int)i64db_iget(instance->list[st->instance_id].regs.vars, reference_getuid(data));
 						else {
 							ShowWarning("script_get_val: cannot access instance variable '%s', defaulting to 0\n", name);
 							data->u.num = 0;
@@ -2762,7 +2762,7 @@ struct DBMap *script_array_src(struct script_state *st, struct map_session_data 
 			break;
 		case '\'':/* instance */
 			if( st->instance_id >= 0 ) {
-				src = &instance->list[st->instance_id].array_db;
+				src = &instance->list[st->instance_id].regs.arrays;
 			}
 			break;
 	}
@@ -2868,13 +2868,13 @@ int set_reg(struct script_state* st, TBL_PC* sd, int64 num, const char* name, co
 			case '\'':
 				if( st->instance_id >= 0 ) {
 					if( str[0] ) {
-						i64db_put(instance->list[st->instance_id].vars, num, aStrdup(str));
+						i64db_put(instance->list[st->instance_id].regs.vars, num, aStrdup(str));
 						if( script_getvaridx(num) )
-							script->array_update(&instance->list[st->instance_id].array_db,num,false);
+							script->array_update(&instance->list[st->instance_id].regs.arrays, num, false);
 					} else {
-						i64db_remove(instance->list[st->instance_id].vars, num);
+						i64db_remove(instance->list[st->instance_id].regs.vars, num);
 						if( script_getvaridx(num) )
-							script->array_update(&instance->list[st->instance_id].array_db,num,true);
+							script->array_update(&instance->list[st->instance_id].regs.arrays, num, true);
 					}
 				} else {
 					ShowError("script_set_reg: cannot write instance variable '%s', NPC not in a instance!\n", name);
@@ -2939,13 +2939,13 @@ int set_reg(struct script_state* st, TBL_PC* sd, int64 num, const char* name, co
 			case '\'':
 				if( st->instance_id >= 0 ) {
 					if( val != 0 ) {
-						i64db_iput(instance->list[st->instance_id].vars, num, val);
+						i64db_iput(instance->list[st->instance_id].regs.vars, num, val);
 						if( script_getvaridx(num) )
-							script->array_update(&instance->list[st->instance_id].array_db,num,false);
+							script->array_update(&instance->list[st->instance_id].regs.arrays, num, false);
 					} else {
-						i64db_remove(instance->list[st->instance_id].vars, num);
+						i64db_remove(instance->list[st->instance_id].regs.vars, num);
 						if( script_getvaridx(num) )
-							script->array_update(&instance->list[st->instance_id].array_db,num,true);
+							script->array_update(&instance->list[st->instance_id].regs.arrays, num, true);
 					}
 				} else {
 					ShowError("script_set_reg: cannot write instance variable '%s', NPC not in a instance!\n", name);
