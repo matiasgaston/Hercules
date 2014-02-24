@@ -3156,10 +3156,10 @@ void pop_stack(struct script_state* st, int start, int end)
 				script->free_vars(ri->scope.vars);
 				ri->scope.vars = NULL;
 			}
-			//if( ri->scope.arrays ) { // FIXME: Who destroys this? It is no longer a valid pointer by the time we reach this point
-			//	script->free_vars(ri->scope.arrays);
-			//	ri->scope.arrays = NULL;
-			//}
+			if( ri->scope.arrays ) {
+				ri->scope.arrays->destroy(ri->scope.arrays,script->array_free_db);
+				ri->scope.arrays = NULL;
+			}
 			if( data->ref )
 				aFree(data->ref);
 			aFree(ri);
@@ -3275,7 +3275,7 @@ void script_free_state(struct script_state* st) {
 				st->script->local.vars = NULL;
 			}
 			if( st->script->local.arrays && !db_size(st->script->local.arrays) ) {
-				script->free_vars(st->script->local.arrays);
+				st->script->local.arrays->destroy(st->script->local.arrays,script->array_free_db);
 				st->script->local.arrays = NULL;
 			}
 		}
@@ -3713,6 +3713,7 @@ int run_func(struct script_state *st)
 			return 1;
 		}
 		script->free_vars(st->stack->scope.vars);
+		st->stack->scope.arrays->destroy(st->stack->scope.arrays,script->array_free_db);
 
 		ri = st->stack->stack_data[st->stack->defsp-1].u.ri;
 		nargs = ri->nargs;
@@ -4881,6 +4882,7 @@ BUILDIN(callfunc)
 	st->stack->defsp = st->stack->sp;
 	st->state = GOTO;
 	st->stack->scope.vars = i64db_alloc(DB_OPT_RELEASE_DATA);
+	st->stack->scope.arrays = i64db_alloc(DB_OPT_BASE);
 
 	return true;
 }
@@ -4931,6 +4933,7 @@ BUILDIN(callsub)
 	st->stack->defsp = st->stack->sp;
 	st->state = GOTO;
 	st->stack->scope.vars = i64db_alloc(DB_OPT_RELEASE_DATA);
+	st->stack->scope.arrays = i64db_alloc(DB_OPT_BASE);
 
 	return true;
 }
