@@ -2749,7 +2749,7 @@ struct DBMap *script_array_src(struct script_state *st, struct map_session_data 
 		default: /* char reg */
 		case '@':/* temp char reg */
 		case '#':/* account reg */
-			src = &sd->array_db;
+			src = &sd->regs.arrays;
 			break;
 		case '$':/* map reg */
 			src = &mapreg->regs.arrays;
@@ -4147,7 +4147,7 @@ int script_reg_destroy(DBKey key, DBData *data, va_list ap) {
  * Clears a single persistent variable
  **/
 void script_reg_destroy_single(struct map_session_data *sd, int64 reg, struct script_reg_state *data) {
-	i64db_remove(sd->var_db, reg);
+	i64db_remove(sd->regs.vars, reg);
 
 	if( data->type ) {
 		struct script_reg_str *p = (struct script_reg_str*)data;

@@ -1111,7 +1111,8 @@ bool pc_authok(struct map_session_data *sd, int login_id2, time_t expiration_tim
 	sd->avail_quests = 0;
 	sd->save_quest = false;
 
-	sd->var_db = i64db_alloc(DB_OPT_BASE);
+	sd->regs.vars = i64db_alloc(DB_OPT_BASE);
+	sd->regs.arrays = NULL;
 	sd->vars_dirty = false;
 	sd->vars_ok = false;
 	sd->vars_received = 0x0;
@@ -8108,7 +8109,7 @@ int pc_candrop(struct map_session_data *sd, struct item *item)
  * For '@type' variables (temporary numeric char reg)
  **/
 int pc_readreg(struct map_session_data* sd, int64 reg) {
-	return i64db_iget(sd->var_db, reg);
+	return i64db_iget(sd->regs.vars, reg);
 }
 /**
  * For '@type' variables (temporary numeric char reg)
@@ -8117,13 +8118,13 @@ void pc_setreg(struct map_session_data* sd, int64 reg, int val) {
 	unsigned int index = script_getvaridx(reg);
 	
 	if( val ) {
-		i64db_iput(sd->var_db, reg, val);
+		i64db_iput(sd->regs.vars, reg, val);
 		if( index )
-			script->array_update(&sd->array_db,reg,false);
+			script->array_update(&sd->regs.arrays, reg, false);
 	} else {
-		i64db_remove(sd->var_db, reg);
+		i64db_remove(sd->regs.vars, reg);
 		if( index )
-			script->array_update(&sd->array_db,reg,true);
+			script->array_update(&sd->regs.arrays, reg, true);
 	}
 }
 
@@ -8133,7 +8134,7 @@ void pc_setreg(struct map_session_data* sd, int64 reg, int val) {
 char* pc_readregstr(struct map_session_data* sd, int64 reg) {
 	struct script_reg_str *p = NULL;
 
-	p = i64db_get(sd->var_db, reg);
+	p = i64db_get(sd->regs.vars, reg);
 	
 	return p ? p->value : NULL;
 }
@@ -8151,23 +8152,23 @@ void pc_setregstr(struct map_session_data* sd, int64 reg, const char* str) {
 		p->value = aStrdup(str);
 		p->flag.type = 1;
 		
-		if( sd->var_db->put(sd->var_db,DB->i642key(reg),DB->ptr2data(p),&prev) ) {
+		if( sd->regs.vars->put(sd->regs.vars, DB->i642key(reg), DB->ptr2data(p), &prev) ) {
 			p = DB->data2ptr(&prev);
 			if( p->value )
 				aFree(p->value);
 			ers_free(pc->str_reg_ers, p);
 		} else {
 			if( index )
-				script->array_update(&sd->array_db,reg,false);
+				script->array_update(&sd->regs.arrays, reg, false);
 		}
 	} else {
-		if( sd->var_db->remove(sd->var_db,DB->i642key(reg),&prev) ) {
+		if( sd->regs.vars->remove(sd->regs.vars, DB->i642key(reg), &prev) ) {
 			p = DB->data2ptr(&prev);
 			if( p->value )
 				aFree(p->value);
 			ers_free(pc->str_reg_ers, p);
 			if( index )
-				script->array_update(&sd->array_db,reg,true);
+				script->array_update(&sd->regs.arrays, reg, true);
 		}
 	}
 }
@@ -8188,7 +8189,7 @@ int pc_readregistry(struct map_session_data *sd, int64 reg) {
 		return 0;
 	}
 	
-	p = i64db_get(sd->var_db, reg);
+	p = i64db_get(sd->regs.vars, reg);
 
 	return p ? p->value : 0;
 }
@@ -8209,7 +8210,7 @@ char* pc_readregistry_str(struct map_session_data *sd, int64 reg) {
 		return NULL;
 	}
 
-	p = i64db_get(sd->var_db, reg);
+	p = i64db_get(sd->regs.vars, reg);
 	
 	return p ? p->value : NULL;
 }
@@ -8254,15 +8255,15 @@ int pc_setregistry(struct map_session_data *sd, int64 reg, int val) {
 		return 0;
 	}
 	
-	if( (p = i64db_get(sd->var_db, reg) ) ) {
+	if( (p = i64db_get(sd->regs.vars, reg) ) ) {
 		if( val ) {
 			if( !p->value && index ) /* its a entry that was deleted, so we reset array */
-				script->array_update(&sd->array_db,reg,false);
+				script->array_update(&sd->regs.arrays, reg, false);
 			p->value = val;
 		} else {
 			p->value = 0;
 			if( index )
-				script->array_update(&sd->array_db,reg,true);
+				script->array_update(&sd->regs.arrays, reg, true);
 		}
 		if( !pc->reg_load )
 			p->flag.update = 1;/* either way, it will require either delete or replace */
@@ -8270,7 +8271,7 @@ int pc_setregistry(struct map_session_data *sd, int64 reg, int val) {
 		DBData prev;
 		
 		if( index )
-			script->array_update(&sd->array_db,reg,false);
+			script->array_update(&sd->regs.arrays, reg, false);
 		
 		p = ers_alloc(pc->num_reg_ers, struct script_reg_num);
 		
@@ -8278,7 +8279,7 @@ int pc_setregistry(struct map_session_data *sd, int64 reg, int val) {
 		if( !pc->reg_load )
 			p->flag.update = 1;
 		
-		if( sd->var_db->put(sd->var_db,DB->i642key(reg),DB->ptr2data(p),&prev) ) {
+		if( sd->regs.vars->put(sd->regs.vars, DB->i642key(reg), DB->ptr2data(p), &prev) ) {
 			p = DB->data2ptr(&prev);
 			ers_free(pc->num_reg_ers, p);
 		}
@@ -8305,17 +8306,17 @@ int pc_setregistry_str(struct map_session_data *sd, int64 reg, const char *val) 
 		return 0;
 	}
 
-	if( (p = i64db_get(sd->var_db, reg) ) ) {
+	if( (p = i64db_get(sd->regs.vars, reg) ) ) {
 		if( val[0] ) {
 			if( p->value )
 				aFree(p->value);
 			else if ( index ) /* a entry that was deleted, so we reset */
-				script->array_update(&sd->array_db,reg,false);
+				script->array_update(&sd->regs.arrays, reg, false);
 			p->value = aStrdup(val);
 		} else {
 			p->value = NULL;
 			if( index )
-				script->array_update(&sd->array_db,reg,true);
+				script->array_update(&sd->regs.arrays, reg, true);
 		}
 		if( !pc->reg_load )
 			p->flag.update = 1;/* either way, it will require either delete or replace */
@@ -8323,7 +8324,7 @@ int pc_setregistry_str(struct map_session_data *sd, int64 reg, const char *val) 
 		DBData prev;
 
 		if( index )
-			script->array_update(&sd->array_db,reg,false);
+			script->array_update(&sd->regs.arrays, reg, false);
 
 		p = ers_alloc(pc->str_reg_ers, struct script_reg_str);
 		
@@ -8332,7 +8333,7 @@ int pc_setregistry_str(struct map_session_data *sd, int64 reg, const char *val) 
 			p->flag.update = 1;
 		p->flag.type = 1;
 		
-		if( sd->var_db->put(sd->var_db,DB->i642key(reg),DB->ptr2data(p),&prev) ) {
+		if( sd->regs.vars->put(sd->regs.vars, DB->i642key(reg), DB->ptr2data(p), &prev) ) {
 			p = DB->data2ptr(&prev);
 			if( p->value )
 				aFree(p->value);
