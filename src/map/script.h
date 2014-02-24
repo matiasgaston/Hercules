@@ -368,12 +368,11 @@ struct script_code {
 };
 
 struct script_stack {
-	int sp;// number of entries in the stack
-	int sp_max;// capacity of the stack
+	int sp;                         ///< number of entries in the stack
+	int sp_max;                     ///< capacity of the stack
 	int defsp;
-	struct script_data *stack_data;// stack
-	struct DBMap *var_function;// scope variables
-	struct DBMap *array_function_db;
+	struct script_data *stack_data; ///< stack
+	struct reg_db scope;            ///< scope variables
 };
 
 /* [Ind/Hercules] */
