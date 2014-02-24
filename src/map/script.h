@@ -341,11 +341,11 @@ struct reg_db {
 };
 
 struct script_retinfo {
-	struct DBMap* var_function;// scope variables
-	struct script_code* script;// script code
-	int pos;// script location
-	int nargs;// argument count
-	int defsp;// default stack pointer
+	struct reg_db scope;        ///< scope variables
+	struct script_code* script; ///< script code
+	int pos;                    ///< script location
+	int nargs;                  ///< argument count
+	int defsp;                  ///< default stack pointer
 };
 
 struct script_data {

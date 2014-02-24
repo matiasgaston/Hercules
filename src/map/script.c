@@ -151,7 +151,7 @@ static void script_dump_stack(struct script_state* st)
 		case C_RETINFO:
 			{
 				struct script_retinfo* ri = data->u.ri;
-				ShowMessage(" %p {var_function=%p, script=%p, pos=%d, nargs=%d, defsp=%d}\n", ri, ri->var_function, ri->script, ri->pos, ri->nargs, ri->defsp);
+				ShowMessage(" %p {scope.vars=%p, scope.arrays=%p, script=%p, pos=%d, nargs=%d, defsp=%d}\n", ri, ri->scope.vars, ri->scope.arrays, ri->script, ri->pos, ri->nargs, ri->defsp);
 			}
 			break;
 		default:
@@ -3152,8 +3152,14 @@ void pop_stack(struct script_state* st, int start, int end)
 		if( data->type == C_RETINFO )
 		{
 			struct script_retinfo* ri = data->u.ri;
-			if( ri->var_function )
-				script->free_vars(ri->var_function);
+			if( ri->scope.vars ) {
+				script->free_vars(ri->scope.vars);
+				ri->scope.vars = NULL;
+			}
+			if( ri->scope.arrays ) {
+				script->free_vars(ri->scope.arrays);
+				ri->scope.arrays = NULL;
+			}
 			if( data->ref )
 				aFree(data->ref);
 			aFree(ri);
@@ -3712,7 +3718,8 @@ int run_func(struct script_state *st)
 		nargs = ri->nargs;
 		st->pos = ri->pos;
 		st->script = ri->script;
-		st->stack->scope.vars = ri->var_function;
+		st->stack->scope.vars = ri->scope.vars;
+		st->stack->scope.arrays = ri->scope.arrays;
 		st->stack->defsp = ri->defsp;
 		memset(ri, 0, sizeof(struct script_retinfo));
 
@@ -4866,11 +4873,12 @@ BUILDIN(callfunc)
 	}
 
 	CREATE(ri, struct script_retinfo, 1);
-	ri->script       = st->script;// script code
-	ri->var_function = st->stack->scope.vars;// scope variables
-	ri->pos          = st->pos;// script location
-	ri->nargs        = j;// argument count
-	ri->defsp        = st->stack->defsp;// default stack pointer
+	ri->script       = st->script;              // script code
+	ri->scope.vars   = st->stack->scope.vars;   // scope variables
+	ri->scope.arrays = st->stack->scope.arrays; // scope arrays
+	ri->pos          = st->pos;                 // script location
+	ri->nargs        = j;                       // argument count
+	ri->defsp        = st->stack->defsp;        // default stack pointer
 	script->push_retinfo(st->stack, ri, ref);
 
 	st->pos = 0;
@@ -4919,11 +4927,12 @@ BUILDIN(callsub)
 	}
 
 	CREATE(ri, struct script_retinfo, 1);
-	ri->script       = st->script;// script code
-	ri->var_function = st->stack->scope.vars;// scope variables
-	ri->pos          = st->pos;// script location
-	ri->nargs        = j;// argument count
-	ri->defsp        = st->stack->defsp;// default stack pointer
+	ri->script       = st->script;              // script code
+	ri->scope.vars   = st->stack->scope.vars;   // scope variables
+	ri->scope.arrays = st->stack->scope.arrays; // scope arrays
+	ri->pos          = st->pos;                 // script location
+	ri->nargs        = j;                       // argument count
+	ri->defsp        = st->stack->defsp;        // default stack pointer
 	script->push_retinfo(st->stack, ri, ref);
 
 	st->pos = pos;
