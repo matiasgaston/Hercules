@@ -5928,7 +5928,7 @@ void clif_wis_end(int fd, int flag) {
 		return;
 	
 	p.PacketType = wisendType;
-	p.flag = (char)flag;
+	p.result = (char)flag;
 #if PACKETVER >= 20131223
 	p.unknown = 0;
 #endif
